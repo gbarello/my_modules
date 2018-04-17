@@ -1,0 +1,14 @@
+import numpy as np
+import pickle
+
+
+def dump_file(name,data):
+    F = open(name,"wb")
+    pickle.dump(data,F)
+    F.close()
+    
+def fetch_file(name):
+    F = open(name,"rb")
+    out = pickle.load(F)
+    F.close()
+    return out

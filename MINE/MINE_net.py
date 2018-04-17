@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-def get_MINE(in1,in2,nlayer = 4,tag = "MINE",noise_1 = 0.,noise_2 = 0.):
+def get_MINE(in1,in2,nlayer = [32,32,32,32],tag = "MINE",noise_1 = 0.,noise_2 = 0.):
 
     P = in1    
     O = in2
@@ -19,8 +19,8 @@ def get_MINE(in1,in2,nlayer = 4,tag = "MINE",noise_1 = 0.,noise_2 = 0.):
 
     net = IN
     
-    for k in range(nlayer):
-        net = tf.layers.dense(net,64,name = "{}_layer_{}".format(tag,k),activation = tf.nn.sigmoid)
+    for k in range(len(nlayer)):
+        net = tf.layers.dense(net,nlayer[k],name = "{}_layer_{}".format(tag,k),activation = tf.nn.sigmoid)
         net = tf.layers.dropout(net,name = "{}_drop_{}".format(tag,k))
 
     net = tf.layers.dense(net,1,name = "{}_layer_final".format(tag))
