@@ -1,0 +1,5 @@
+This is a module written by Gabriel Barello 6/11/2018
+
+The goal of this module is to implement a framework with which to train VAEs with a flexible choice of input, encoder, latent variable prior, and generative model.
+
+The main structure will be a VAE which will be defined by 

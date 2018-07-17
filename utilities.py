@@ -1,7 +1,47 @@
 import numpy as np
 import pickle
+import os
+import time
+import glob
+import json
 
+def save_dict(direc,dic):
+    F = open(direc + ".json","w")
+    json.dump(dic,F)
+    F.close()
 
+def read_dict(direc):
+    F = open(direc + ".json","r")
+    out = json.load(F)
+    F.close()
+
+    return out
+
+def get_directory(direc="./",tag = "results"):
+    while os.path.exists(direc + "lockfile.lock"):
+        time.sleep(1)
+
+    F = open(direc + "lockfile.lock", 'w')
+    F.close()
+
+    directories = os.walk(direc)
+    directories = [x for d in directories for x in d[1] if d[0] == direc if x[:len(tag)] == tag]
+
+    if len(directories) == 0:
+        fnum = 0
+    else:
+        fnum = [int(x.split(tag)[1][1:].split(".")[0]) for x in directories]
+        fnum.sort()
+        fnum = fnum[-1]+1
+
+    newdir = direc + tag + "_" + str(fnum)
+
+    os.mkdir(newdir)
+
+    os.remove(direc + "lockfile.lock")
+
+    return newdir
+        
 def dump_file(name,data):
     F = open(name,"wb")
     pickle.dump(data,F)

@@ -1,4 +1,4 @@
-import MINE_net as MINE
+from .MINE_net import *
 
 import tensorflow as tf
 import numpy as np
@@ -22,7 +22,7 @@ def get_MINE_variable(data,label,vdata,vlabel,ndim,nbatch = 1000,PRINT = True):
     INvar = tf.tensordot(IN,dnorm,axes = [[1],[1]])
     OUT = tf.placeholder(tf.float32,shape = [nbatch,int(label.shape[-1])])
 
-    MI = MINE.get_MINE(INvar,OUT)
+    MI = get_MINE(INvar,OUT)
 
     MI_up = tf.train.AdamOptimizer().minimize(-MI)
 
