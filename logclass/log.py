@@ -1,41 +1,27 @@
-
+import utilities as util
+import numpy as np
 class log:
-    def __init__(self,f,name = "",PRINT = True):
-        text = ""
+    def __init__(self,entries = [],fname = "",PRINT = False):
 
-        if type(name) == list:
-            text = "{}".format(name[0])
-            for x in name[1:]:
-                text += ",{}".format(x)
+        if fname != "":
+            self.data = np.loadtxt(fname)
+
+        else:
+            self.data = [entries]
+            if PRINT:
+                self.print_list(entries)
                 
-        elif type(data) == str:
-            text = name
-            
-        self.FNAME = f
-
-        F = open(self.FNAME,"w")
-        if len(text) != 0:
-            F.write(text + "\n")
-        F.close()
-        if PRINT:
-            print(text)
+    def print_list(self,dat):
+        t = str(dat[0])
+        for e in dat[1:]:
+            t += "\t{}".format(e)
+        print(t)
 
     def log(self,data,PRINT = True):
 
-        text = ""
-
-        if type(data) == list:
-            text = "{}".format(data[0])
-            for x in data[1:]:
-                text += ",{}".format(x)
-                
-        elif type(data) == str:
-            text = data
-
         if PRINT:
-            print(text)
+            self.print_list(data)
 
-        F = open(self.FNAME,"a")
-        F.write(str(text) + "\n")
-        F.close()
-
+        self.data.append(data)
+    def save(self,fname):
+        np.savetxt(fname,self.data[1:])

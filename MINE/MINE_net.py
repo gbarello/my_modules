@@ -4,7 +4,7 @@ import numpy as np
 
 old_layers_val = [128,64,64,64]
 
-def get_MINE(in1,in2,nlayer = [10,10],tag = "MINE",noise_1 = 0.,noise_2 = 0.,flatten_time_axis = False,getrawout = False,reuse = False,grad_timescale = 10,unbias_grad = False):
+def get_MINE(in1,in2,nlayer = [64,64],tag = "MINE",noise_1 = 0.,noise_2 = 0.,flatten_time_axis = False,getrawout = False,reuse = False,grad_timescale = 10,unbias_grad = False):
 
     P = in1    
     O = in2
@@ -39,27 +39,30 @@ def get_MINE(in1,in2,nlayer = [10,10],tag = "MINE",noise_1 = 0.,noise_2 = 0.,fla
 
     if unbias_grad:
         try:
-            @tf.RegisterGradient(tag + "CustomMINE_Log")
+            @tf.RegisterGradient(tag + "CustomMINE_Log_{}".format(grad_timescale))
             def _custom_log_grad(op,x):
-                '''normal gradient is x/op[0] (or the gradient of the input, divided by the input).'''
+                '''normal gradient is x/op.inputs[0] (or the gradient of the input, divided by the input).'''
                 inp = op.inputs[0]
-
                 with tf.variable_scope("",reuse = tf.AUTO_REUSE):
-                    unbiased_grad = tf.get_variable(tag + "unbias_MINE_grad",initializer = np.float32(1.))
-                    ugrad_tracker = tf.get_variable(tag + "unbias_MINE_grad_track",initializer = False)
+                    unbiased_grad = tf.get_variable(tag + "unbias_MINE_grad_{}".format(grad_timescale),initializer = np.float32(1.))
+                    ugrad_tracker = tf.get_variable(tag + "unbias_MINE_grad_track_{}".format(grad_timescale),initializer = False)
+                    ugrad_test = tf.get_variable(tag + "unbias_MINE_grad_test_{}".format(grad_timescale),initializer = np.float32(1.))
 
+                ugrad_test = tf.assign(ugrad_test,inp)
                 if ugrad_tracker:
                     unbiased_grad = tf.assign(unbiased_grad,unbiased_grad * tf.exp(-1./grad_timescale) + (1. - tf.exp(-1./grad_timescale))*inp)
                 else:
                     unbiased_grad = tf.assign(unbiased_grad,inp)
                     ugrad_tracker = tf.assign(ugrad_tracker,True)
 
-                return inp/unbiased_grad
+                #return x/unbiased_grad
+                return x/ugrad_test
+                #return x/inp
         except:
             print("already registered gradient")
         
         G = tf.get_default_graph()
-        with G.gradient_override_map({"Log":tag + "CustomMINE_Log"}):
+        with G.gradient_override_map({"Log":tag + "CustomMINE_Log_{}".format(grad_timescale)}):
             MINE2 =  - tf.log(tf.reduce_mean(tf.exp(net[:,1])),name = "Log")
 
     else:
@@ -70,7 +73,7 @@ def get_MINE(in1,in2,nlayer = [10,10],tag = "MINE",noise_1 = 0.,noise_2 = 0.,fla
     if getrawout:
         return MINE,net
     else:
-        return MINE
+        return MINE,tf.reduce_mean(tf.exp(net[:,1]))
 
 def get_MINE_grad_vars(in1,in2,nlayer = [10,10],tag = "MINE",noise_1 = 0.,noise_2 = 0.,flatten_time_axis = False,getrawout = False,reuse = False):
 
