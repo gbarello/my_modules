@@ -25,3 +25,39 @@ class log:
         self.data.append(data)
     def save(self,fname):
         np.savetxt(fname,self.data[1:])
+
+class running_log:
+    def __init__(self,fname,header="",PRINT = False):
+
+        self.fname = fname
+
+        if type(header) != list:
+            pr = header
+            F = open(fname,"w")
+            F.write(pr)
+            F.close()
+        else:
+            pr = "{}".format(header[0])
+            for t in header[1:]:
+                pr += ",{}".format(t)
+                
+            F = open(self.fname,"w")
+            F.write(pr + "\n")
+            F.close()
+            
+        
+        if PRINT:
+            print(pr)
+        
+    def log(self,data,PRINT = True):
+
+        pr = "{}".format(data[0])
+        for t in data[1:]:
+            pr += ",{}".format(t)
+
+        F = open(self.fname,"a")
+        F.write(pr + "\n")
+        F.close()
+
+        if PRINT:
+            print(pr)

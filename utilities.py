@@ -85,3 +85,18 @@ def csv_line(value_parser):
         return list(map(value_parser, string.split(',')))
     return convert
 
+def read_csv(f,header = False):
+    F = open(f,"r")
+    out = []
+    ll = 0
+    for l in F:
+        temp = l.split(",")
+        temp[-1] = temp[-1][:-1]
+        if (header and ll == 0) or True:
+            out.append(temp)
+        else:
+            out.append([float(x) for x in temp])
+            
+        ll += 1
+        
+    return out

@@ -2,6 +2,7 @@ import numpy as np
 import time
 import scipy.ndimage
 import scipy.signal
+
 def N_to_R(n):
     temp = n
     out = []
@@ -48,6 +49,7 @@ class CA:
     def chunk_state(self,nchunk):
         ch = np.ones(nchunk)
         return (np.convolve(self.state,ch,"same")/np.float32(nchunk))[::nchunk]
+    
 class CA2D:
     def __init__(self,size,rule,p = .01,name = "",nbhd = np.array([[1,1,1],[1,0,1],[1,1,1]])):
         self.state = np.int32(np.zeros([size,size]))
