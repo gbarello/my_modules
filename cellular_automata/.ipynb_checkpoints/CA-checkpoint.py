@@ -2,6 +2,7 @@ import numpy as np
 import time
 import scipy.ndimage
 import scipy.signal
+
 def N_to_R(n):
     temp = n
     out = []
@@ -48,33 +49,37 @@ class CA:
     def chunk_state(self,nchunk):
         ch = np.ones(nchunk)
         return (np.convolve(self.state,ch,"same")/np.float32(nchunk))[::nchunk]
+    
 class CA2D:
     def __init__(self,size,rule,p = .01,name = "",nbhd = np.array([[1,1,1],[1,0,1],[1,1,1]])):
-        self.state = np.int32(np.zeros([size,size]))
+        self.state = np.int32(np.zeros(size))
         self.p = p
         self.rule = rule
-        self.size = size
-        self.rng = lambda :np.random.multinomial(1,[1.-p,p],[size,size])[:,:,1]        
-        self.rst = lambda :np.random.randint(0,2,[size,size])
+        self.size = np.array(size)
+        self.rng = lambda :np.random.uniform(0,1,size)        
+        self.rst = lambda :np.random.randint(0,2,size)
         self.name = name
         self.nbhd = nbhd
         
     def rand_init(self,r = .5):
-        self.state = np.random.multinomial(1,[1.-r,r],[self.size,self.size])[:,:,1]
+        self.state = np.random.multinomial(1,[1.-r,r],self.size)[:,:,1]
         
     def pentomino_init(self):
         self.state = np.zeros_like(self.state)
             
-        n = int(self.size/2)
-        
-        pnt = [[n,n],[n+1,n],[n-1,n],[n-1,n-1],[n,n+1]]
+        n = np.int32(self.size/2)
+       
+        o1 = np.array([1,0])
+        o2 = np.array([0,1])
+    
+        pnt = [n,n + o1,n - o1,n - o1 - o2,n + o2]
         
         for p in pnt:   
             self.state[p[0],p[1]] = 1
         
     def set_p(self,p):
         self.p = p
-        self.rng = lambda :np.random.multinomial(1,[1.-p,p],[self.size,self.size])[:,:,1]        
+        self.rng = lambda :np.random.multinomial(1,[1.-p,p],self.size)[:,:,1]        
         
     def update(self,ns = 1,PRINT = False):
         for k in range(ns):
@@ -104,7 +109,7 @@ class CA2D:
             self.state[(temp == 0)*np.logical_not(mask_01)] = 0
             self.state[(temp == 1)*np.logical_not(mask_11)] = 0
 
-            num = self.rng()
+            num = self.rng() < self.p
             rst = self.rst()
             
             self.state = self.state*(1 - num) + (rst)*num
