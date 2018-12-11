@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 
 class long_walker:
 
@@ -8,16 +8,17 @@ class long_walker:
 
         self.pos = np.array([0,0])
 
-    def update(a):
-        assert a.tolist() in [[0,0],[1,0],[-1,0],[0,1],[0,-1]]
-
+    def actions(self):
+        return [np.array([0,0]),np.array([1,0]),np.array([-1,0]),np.array([0,1]),np.array([0,-1])]
+    def update(self,a):
+            
         if self.pos[1] == 0:
             if self.pos[0] < self.len:
                 self.pos += np.array([a[0],0])
             elif a.tolist() in [[-1,0],[0,1],[0,0]]:
                 self.pos += a
             
-            self.pos = max(self.pos,0)
+            self.pos = np.int32((self.pos + np.abs(self.pos))/2)
             
         elif self.pos[1] == 1:
             if self.pos[0] < self.len:
@@ -28,4 +29,7 @@ class long_walker:
                 self.pos = np.array([0,0])
                 return 1
             
-        return 0
+        return -1
+    
+    def reset(self):
+        self.pos = np.array([0,0])
