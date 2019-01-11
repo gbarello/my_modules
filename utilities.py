@@ -92,7 +92,7 @@ def read_csv(f,header = False):
     for l in F:
         temp = l.split(",")
         temp[-1] = temp[-1][:-1]
-        if (header and ll == 0) or True:
+        if (header and ll == 0):
             out.append(temp)
         else:
             out.append([float(x) for x in temp])
