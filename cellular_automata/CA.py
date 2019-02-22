@@ -79,12 +79,12 @@ class CA2D:
         
     def set_p(self,p):
         self.p = p
-        self.rng = lambda :np.random.multinomial(1,[1.-p,p],self.size)[:,:,1]        
+        self.rng =lambda :np.random.uniform(0,1,self.size) # lambda :np.random.multinomial(1,[1.-p,p],self.size)[:,:,1]
         
     def update(self,ns = 1,PRINT = False):
         for k in range(ns):
 
-            conv = np.int32(np.rint(scipy.signal.fftconvolve(self.state,self.nbhd,mode = 'same')))
+            conv = np.int32(np.rint(scipy.signal.convolve2d(self.state,self.nbhd,mode = 'same',boundary = "wrap")))
 
             temp = np.copy(self.state)
 
