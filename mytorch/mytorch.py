@@ -8,25 +8,105 @@ class stop_grad(torch.autograd.Function):
         return x
     @staticmethod
     def backward(ctx,x):        
-        return torch.zeros_like(x)
-
-    
+        return torch.zeros_like(x)    
 stop_gradients = stop_grad.apply
+
+def my_normalize_axes(x,dim,eps = 1e-6):
+    xm = torch.mean(x,dim,keepdims = True)
+    xs = torch.std(x,dim,keepdims = True)
+    
+    return (x - xm)/(xs + eps)
 
 def safe_torch_expnorm(W,dim):
     MAX = torch.max(W,dim = dim,keepdims = True)[0]
     DIFF = W - dim
     return torch.exp(DIFF)/torch.sum(torch.exp(DIFF),dim = dim,keepdims = True)
 
+class my_dense_ResLayer(nn.Module):
+    def __init__(self,
+                 in_size,
+                 bottleneck_size,
+                 nonlinearity = torch.relu,
+                 normalize = True,
+                 dropout = .5):
+        
+        super(my_dense_ResLayer,self).__init__()
+        self.in_size = in_size
+        self.bottleneck_size = bottleneck_size
+        self.nonlinearity = nonlinearity
+        self.normalize = normalize
+        self.dropout = nn.Dropout(dropout)
+        
+        self.L1 = nn.Linear(self.in_size,self.bottleneck_size)
+        self.L2 = nn.Linear(self.bottleneck_size,self.in_size)
+    def forward(self,x):
+        y = self.nonlinearity(self.L1(self.dropout(x)))
+        y = self.nonlinearity(self.L2(y))
+        y = x + y
+        
+        if self.normalize:
+            y = my_normalize_axes(y,-1)
+        return y
+    
+class my_dense_ResBlock(nn.Module):
+    def __init__(self,
+                 n_layer,
+                 size,
+                 bottleneck_size,
+                 nonlinearity = torch.relu,
+                 normalize = True,
+                 dropout = .5):
+        
+        super(my_dense_ResBlock,self).__init__()
+        
+        self.size = size
+        self.n_layer = n_layer
+        self.bottleneck_size = bottleneck_size
+        self.nonlinearity = nonlinearity
+        self.normalize = normalize
+        self.dropout = dropout
+
+        self.net = ffw([my_dense_ResLayer(
+            self.size,
+            self.bottleneck_size,
+            nonlinearity = self.nonlinearity,
+            normalize = self.normalize,
+            dropout = self.dropout) for n in range(self.n_layer)])
+        
+    def forward(self,x):
+        return self.net(x)
+    
+class my_dense_ResNet(nn.Module):
+    def __init__(self,n_layers,block_size,bottlenecks,nonlinearity = torch.relu,normalize = True,dropout = .5):
+        super(my_dense_ResNet,self).__init__()
+        
+        self.n_layers = n_layers
+        self.block_size = block_size
+        self.bottlenecks = bottlenecks
+        self.nonlinearity = nonlinearity
+        self.normalize = normalize
+        self.dropout = dropout
+        
+        self.net = []
+        for i,(n,l,b) in enumerate(zip(self.n_layers,self.block_size[1:],self.bottlenecks)):
+            self.net += [nn.Linear(self.block_size[i],l),
+                         my_dense_ResBlock(n,l,b,self.nonlinearity,self.normalize,self.dropout)
+                        ]
+        
+        self.net = ffw(self.net)
+            
+    def forward(self,x):
+        return self.net(x)
+        
 class my_ResLayer(nn.Module):
-    def __init__(self,out_size,bottleneck_size,kernel_size,nonlinearity = torch.relu):
+    def __init__(self,out_size,bottleneck_size,kernel_size,nonlinearity = torch.relu,normalize = True):
         super(my_ResLayer,self).__init__()
         
         self.out_size = out_size
         self.bottleneck_size = bottleneck_size
         self.nonlinearity = nonlinearity
         self.padding = kernel_size // 2
-        
+        self.normalize = normalize
         
         self.L1 = nn.Conv2d(self.out_size,self.bottleneck_size,kernel_size, padding = self.padding)
         self.L2 = nn.Conv2d(self.bottleneck_size,self.out_size,1)
@@ -35,8 +115,10 @@ class my_ResLayer(nn.Module):
         y = self.L1(x)
         y = self.nonlinearity(y)
         y = self.L2(y)
-        
-        return x + y
+        y = x + y
+        if self.normalize:
+            y = my_normalize_axes(y,(-1,-2,-3))
+        return y
     
 class my_ResBlock(nn.Module):
     def __init__(self,n_layers,out_size,bottleneck_size,kernel_size,nonlinearity = torch.relu):
@@ -75,7 +157,6 @@ class my_ResNet(nn.Module):
         for i,(n,b,k) in enumerate(zip(n_layers,bottleneck_size,kernel_size)):
             self.blocks.append(ffw([
                 nn.Conv2d(in_size[i],in_size[i+1],stride[i]),
-                nn.BatchNorm2d(in_size[i+1],track_running_stats = True),
                 my_ResBlock(n,in_size[i+1],b,k,nonlinearity = nonlinearity)])
                               )
             
